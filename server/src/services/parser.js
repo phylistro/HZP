@@ -1,4 +1,4 @@
-const pdfParse = require('pdf-parse');
+const pdfjsLib = require('pdfjs-dist/legacy/build/pdf.mjs');
 const mammoth = require('mammoth');
 const path = require('path');
 
@@ -17,8 +17,28 @@ async function extractText(buffer, filename) {
 }
 
 async function extractFromPDF(buffer) {
-  const data = await pdfParse(buffer);
-  return data.text.trim();
+  const uint8 = new Uint8Array(buffer);
+  const doc = await pdfjsLib.getDocument({ data: uint8 }).promise;
+  const pages = [];
+
+  for (let i = 1; i <= doc.numPages; i++) {
+    const page = await doc.getPage(i);
+    const content = await page.getTextContent();
+    const lines = [];
+    let lastY = null;
+
+    for (const item of content.items) {
+      if (lastY !== null && Math.abs(item.transform[5] - lastY) > 2) {
+        lines.push('\n');
+      }
+      lines.push(item.str);
+      lastY = item.transform[5];
+    }
+
+    pages.push(lines.join(' ').replace(/ \n /g, '\n').trim());
+  }
+
+  return pages.join('\n\n').trim();
 }
 
 async function extractFromDOCX(buffer) {

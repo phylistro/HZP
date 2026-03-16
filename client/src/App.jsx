@@ -44,13 +44,13 @@ export default function App() {
       updateState({ resumeText, loadingMessage: 'Analyzing your resume with AI...' })
 
       const analysisRes = await axios.post('/api/analyze', { text: resumeText })
-      const analysis = analysisRes.data
+      const analysis = analysisRes.data.analysis || analysisRes.data
 
       updateState({ analysis, loadingMessage: 'Finding matching job opportunities...' })
 
       const jobsRes = await axios.post('/api/jobs', {
         skills: analysis.skills || [],
-        title: analysis.title || analysis.name || '',
+        title: analysis.experience?.[0]?.title || analysis.name || '',
       })
       const jobs = jobsRes.data.jobs || jobsRes.data || []
 
